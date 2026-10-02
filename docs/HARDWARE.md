@@ -71,8 +71,12 @@ serial console for `idf.py monitor`).
 
 * **Never plug anything into the socket marked `USB` while the breakout is
   connected.** Both use GPIO19/20; they cannot be active at the same time.
-* **Twist the D+/D− pair together** along its whole length. This matters more
-  than the length does. Jumper wires are a poor transmission line, but the
+* **Twist the D+/D− pair together** along its whole length — wind the two
+  wires around each other like a cord, about one turn per 1–2 cm, which is
+  roughly how tightly real twisted-pair cable is wound. Twist only those two;
+  pair VBUS and GND separately or leave them loose, but do not bundle all four,
+  or the supply couples noise into the data pair. This matters more than the
+  length does. Jumper wires are a poor transmission line, but the
   ESP32-S3 only speaks USB full-speed (12 Mbit/s), which tolerates far more
   than high-speed would — 20 cm of twisted jumper wire is normally fine, and
   MIDI uses a tiny fraction of that bandwidth anyway.
