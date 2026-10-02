@@ -14,7 +14,7 @@ PORT ?= $(shell ls /dev/cu.usbmodem* /dev/cu.usbserial* /dev/cu.wchusbserial* 2>
 
 DOCKER_RUN = docker run --rm -v "$(CURDIR)":/project -w /project $(IDF_IMAGE)
 
-.PHONY: help build flash run monitor test menuconfig size clean fullclean erase port watch
+.PHONY: help build flash run monitor test menuconfig size clean fullclean erase port reconfigure
 
 help:
 	@echo "make build       compile the firmware in the ESP-IDF container"
@@ -27,11 +27,26 @@ help:
 	@echo "make erase       erase the whole flash (also wipes stored WiFi state)"
 	@echo "make clean       delete build output"
 	@echo "make port        show which serial port was detected"
+	@echo "make reconfigure drop sdkconfig so credentials.defaults is re-applied"
 	@echo ""
 	@echo "detected port: $(PORT)"
 
-build:
+build: reconfigure
 	$(DOCKER_RUN) idf.py build
+
+# ESP-IDF applies SDKCONFIG_DEFAULTS only when sdkconfig does not exist yet, so
+# an edit to credentials.defaults would otherwise be silently ignored and you
+# would flash a firmware with no WiFi configured.
+reconfigure:
+	@if [ -f sdkconfig ]; then \
+		for f in sdkconfig.defaults credentials.defaults; do \
+			if [ -f "$$f" ] && [ "$$f" -nt sdkconfig ]; then \
+				echo "$$f is newer than sdkconfig, regenerating it"; \
+				rm -f sdkconfig; \
+				break; \
+			fi; \
+		done; \
+	fi
 
 flash: check-port
 	cd build && $(ESPTOOL) --chip esp32s3 --port $(PORT) -b $(BAUD) \

@@ -71,6 +71,12 @@ cp credentials.defaults.example credentials.defaults   # then fill it in
 the top-level `CMakeLists.txt`, so secrets never reach the repository and no
 `menuconfig` round-trip is needed.
 
+ESP-IDF applies `SDKCONFIG_DEFAULTS` only when `sdkconfig` does not exist yet,
+so editing this file after a first build would otherwise be ignored without a
+word — and you would flash a firmware with no WiFi configured. `make build`
+notices and regenerates `sdkconfig`; if you build by hand, delete `sdkconfig`
+yourself (or run `make reconfigure`) after changing it.
+
 Leave username and password empty for a broker that allows anonymous access
 (Mosquitto started with `mosquitto-no-auth.conf`):
 
@@ -120,6 +126,7 @@ All of these are wrappers around longer commands; run `make help` for the list.
 | `make erase` | Erases the entire flash. Use when the board behaves strangely. |
 | `make clean` / `make fullclean` | Deletes build output. |
 | `make port` | Shows the detected serial port and what is on it. |
+| `make reconfigure` | Drops `sdkconfig` so `credentials.defaults` is applied again. `make build` does this automatically. |
 
 The port is detected automatically; override it if you have several boards
 plugged in:
@@ -255,6 +262,7 @@ make test
 | Device attaches, then `no USB MIDI interface found` | Something other than the piano is plugged in, or D+/D− are swapped. |
 | Enumerates, then disconnects or stalls | D+/D− wires too long or not routed as a pair. Shorten them. |
 | Chords are recognised but Home Assistant shows nothing | Broker address or credentials; run `make monitor` and look for the `mqtt` tag. |
+| Edited `credentials.defaults` but the log still says no SSID | A stale `sdkconfig` is overriding it. `make reconfigure && make build`. |
 | `make monitor` shows nothing at all | Cable is in the socket marked `USB` instead of `UART`. Check with `make port`. |
 | Rolled chords fire the wrong trigger | Raise `stable_ms` in `triggers.json`. |
 | A trigger fires repeatedly | Raise `retrigger_ms`. |
