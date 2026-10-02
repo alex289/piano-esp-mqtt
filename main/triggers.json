@@ -1,0 +1,31 @@
+{
+  "_comment": [
+    "Chord detection tuning and the chords that fire Home Assistant triggers.",
+    "Edit this file and re-flash: idf.py build flash",
+    "",
+    "stable_ms         how long the set of held keys must stay unchanged before",
+    "                  it counts as a chord. Raise it if rolled chords produce",
+    "                  spurious intermediate matches.",
+    "min_notes         fewest keys held at once to consider a chord at all.",
+    "include_sustained count notes still ringing via the sustain pedal (CC64).",
+    "retrigger_ms      a trigger will not fire again within this window.",
+    "",
+    "A trigger matches either:",
+    "  \"chord\": \"Cmaj7\"    any voicing/inversion/octave of that chord.",
+    "  \"chord\": \"C/E\"      additionally requires E in the bass.",
+    "  \"notes\": [60,64,67]  those exact MIDI note numbers, nothing else."
+  ],
+
+  "stable_ms": 60,
+  "min_notes": 3,
+  "include_sustained": false,
+  "retrigger_ms": 1500,
+
+  "triggers": [
+    { "id": "licht_an",    "name": "Licht an",       "chord": "Cmaj7" },
+    { "id": "licht_aus",   "name": "Licht aus",      "chord": "Fm" },
+    { "id": "szene_abend", "name": "Szene Abend",    "chord": "Am7" },
+    { "id": "musik_stopp", "name": "Musik stoppen",  "chord": "G7sus4" },
+    { "id": "gruss",       "name": "Gruss-Akkord",   "notes": [60, 64, 67, 72] }
+  ]
+}

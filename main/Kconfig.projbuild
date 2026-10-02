@@ -1,0 +1,51 @@
+menu "Piano MQTT Bridge"
+
+    config PIANO_WIFI_SSID
+        string "WiFi SSID"
+        default ""
+
+    config PIANO_WIFI_PASSWORD
+        string "WiFi password"
+        default ""
+
+    config PIANO_WIFI_MAX_RETRY
+        int "WiFi connect retries before a full restart"
+        default 20
+
+    config PIANO_MQTT_URI
+        string "MQTT broker URI"
+        default "mqtt://homeassistant.local:1883"
+        help
+            For example mqtt://10.0.0.5:1883 or mqtts://broker:8883.
+
+    config PIANO_MQTT_USERNAME
+        string "MQTT username"
+        default ""
+
+    config PIANO_MQTT_PASSWORD
+        string "MQTT password"
+        default ""
+
+    config PIANO_MQTT_BASE_TOPIC
+        string "Base topic for this device"
+        default "piano"
+
+    config PIANO_HA_DISCOVERY_PREFIX
+        string "Home Assistant MQTT discovery prefix"
+        default "homeassistant"
+
+    config PIANO_DEVICE_ID
+        string "Device id (unique, used in topics and unique_ids)"
+        default "piano_p115"
+
+    config PIANO_DEVICE_NAME
+        string "Device name shown in Home Assistant"
+        default "Yamaha P-115"
+
+    config PIANO_PUBLISH_RAW_MIDI
+        bool "Also publish every raw MIDI note on/off"
+        default n
+        help
+            Useful for debugging, but chatty: publishes to <base>/midi.
+
+endmenu
