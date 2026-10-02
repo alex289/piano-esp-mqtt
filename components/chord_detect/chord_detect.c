@@ -190,7 +190,7 @@ named:
     snprintf(out->base_name, sizeof(out->base_name), "%s%s",
              chord_pitch_class_name(out->root_pc), chord_quality_suffix(out->quality));
     if (out->root_pc == out->bass_pc) {
-        memcpy(out->name, out->base_name, sizeof(out->name));
+        memcpy(out->name, out->base_name, sizeof(out->base_name));
     } else {
         snprintf(out->name, sizeof(out->name), "%s/%s",
                  out->base_name, chord_pitch_class_name(out->bass_pc));
@@ -325,7 +325,7 @@ bool chord_detect_poll(chord_detect_t *st, uint32_t now_ms, chord_t *out)
     /* Unidentified sets still get a name so they are visible in Home Assistant. */
     if (!out->identified) {
         snprintf(out->base_name, sizeof(out->base_name), "?%s", chord_pitch_class_name(out->bass_pc));
-        memcpy(out->name, out->base_name, sizeof(out->name));
+        memcpy(out->name, out->base_name, sizeof(out->base_name));
     }
 
     if (st->last_valid && strcmp(st->last_name, out->name) == 0) {

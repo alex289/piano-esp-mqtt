@@ -67,7 +67,8 @@ esp_err_t app_triggers_load(app_triggers_t *cfg)
             continue;
         }
         if (t->name[0] == '\0') {
-            snprintf(t->name, sizeof(t->name), "%s", t->id);
+            /* Not snprintf: source and destination are both inside *cfg. */
+            memcpy(t->name, t->id, strlen(t->id) + 1);
         }
         t->require_bass = (strchr(t->chord, '/') != NULL);
 

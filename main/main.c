@@ -137,11 +137,20 @@ void app_main(void)
     s_midi_queue = xQueueCreate(MIDI_QUEUE_LEN, sizeof(usb_midi_msg_t));
     ESP_ERROR_CHECK(s_midi_queue ? ESP_OK : ESP_ERR_NO_MEM);
 
-    ESP_ERROR_CHECK(app_wifi_start());
-    if (!app_wifi_wait_connected(30000)) {
-        ESP_LOGW(TAG, "no WiFi yet, carrying on; MQTT will connect when it comes up");
+    /*
+     * Without credentials the bridge still runs: USB MIDI and chord detection
+     * work, and recognised chords show up in the log. That makes it possible
+     * to bring up and debug the hardware before any network exists.
+     */
+    if (app_wifi_start() == ESP_OK) {
+        if (!app_wifi_wait_connected(30000)) {
+            ESP_LOGW(TAG, "no WiFi yet, carrying on; MQTT will connect when it comes up");
+        }
+        ESP_ERROR_CHECK(app_mqtt_start(&s_cfg));
+    } else {
+        ESP_LOGW(TAG, "running offline: chords are logged but not published");
+        ESP_LOGW(TAG, "set credentials in credentials.defaults, then rebuild");
     }
-    ESP_ERROR_CHECK(app_mqtt_start(&s_cfg));
 
     const usb_midi_host_config_t midi_cfg = {
         .on_message    = on_midi_message,

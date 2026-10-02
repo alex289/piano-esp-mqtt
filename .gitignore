@@ -6,3 +6,4 @@ dependencies.lock
 .vscode/
 test/test_chord_detect
 test/*.dSYM/
+credentials.defaults

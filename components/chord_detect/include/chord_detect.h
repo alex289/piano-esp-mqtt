@@ -17,7 +17,9 @@ extern "C" {
 #endif
 
 #define CHORD_MAX_NOTES 10
-#define CHORD_NAME_LEN  16
+/* "C#" + "mMaj7" is the longest base name; the full name adds "/A#". */
+#define CHORD_BASE_NAME_LEN 16
+#define CHORD_NAME_LEN      24
 
 typedef enum {
     CHORD_QUALITY_UNKNOWN = 0,
@@ -59,8 +61,8 @@ typedef struct {
     uint8_t         note_count;
     uint8_t         notes[CHORD_MAX_NOTES];     /* ascending MIDI note numbers */
     uint8_t         velocity;                   /* peak velocity of the chord  */
-    char            name[CHORD_NAME_LEN];       /* e.g. "Cmaj7" or "Cmaj7/E"   */
-    char            base_name[CHORD_NAME_LEN];  /* same, without the /bass part */
+    char            name[CHORD_NAME_LEN];            /* e.g. "Cmaj7" or "Cmaj7/E" */
+    char            base_name[CHORD_BASE_NAME_LEN];  /* same, without the /bass   */
 } chord_t;
 
 typedef struct {
