@@ -83,8 +83,11 @@ The base topic, the discovery prefix and the device id are all configurable via
 ## Watching what the piano sends
 
 ```bash
-mosquitto_sub -h homeassistant.local -u <user> -P <pass> -v -t 'piano/#'
+mosquitto_sub -h <broker> -v -t 'piano/#'
 ```
+
+Add `-u <user> -P <pass>` if your broker requires authentication; a Mosquitto
+started with `mosquitto-no-auth.conf` does not.
 
 Play chords and the recognised names show up immediately. This is the quickest
 way to find out what to put into `triggers.json`.
@@ -95,6 +98,6 @@ Discovery messages are retained, so the device survives a firmware wipe. To
 clear it out:
 
 ```bash
-mosquitto_sub -h homeassistant.local -u <user> -P <pass> -v \
+mosquitto_sub -h <broker> -v \
   -t 'homeassistant/+/piano_p115/#' --remove-retained --retained-only
 ```

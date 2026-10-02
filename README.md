@@ -33,6 +33,8 @@ components/chord_detect/    note stream -> chord name (no ESP dependencies)
 main/                       WiFi, MQTT, Home Assistant discovery, glue
 main/triggers.json          chord -> trigger mapping, embedded in the image
 test/                       host-side tests for the chord detector
+tools/monitor.py            serial log reader (idf.py monitor needs local IDF)
+Makefile                    wrappers for build / flash / monitor
 docs/HARDWARE.md            wiring, and why the native USB-C socket is not enough
 docs/HOME_ASSISTANT.md      entities, triggers, topics
 ```
@@ -45,38 +47,150 @@ directly because the DevKitC-1 does not put 5 V on its VBUS pin, and the piano
 will not talk without it. Full explanation and the diagram:
 **[docs/HARDWARE.md](docs/HARDWARE.md)**.
 
-## Build
+## Setup
 
-Needs ESP-IDF **v5.3 or newer**.
+### One-off: the toolchain
+
+Nothing has to be installed system-wide. ESP-IDF runs in a container, and the
+only host-side tool is `esptool` (for flashing) plus `pyserial` (for the log),
+which live in their own virtualenv:
+
+```bash
+python3 -m venv ~/.esptool-venv
+~/.esptool-venv/bin/pip install esptool
+docker pull espressif/idf:v5.5
+```
+
+### One-off: credentials
 
 ```bash
 cp credentials.defaults.example credentials.defaults   # then fill it in
+```
 
+`credentials.defaults` is gitignored and appended to `SDKCONFIG_DEFAULTS` by
+the top-level `CMakeLists.txt`, so secrets never reach the repository and no
+`menuconfig` round-trip is needed.
+
+Leave username and password empty for a broker that allows anonymous access
+(Mosquitto started with `mosquitto-no-auth.conf`):
+
+```
+CONFIG_PIANO_WIFI_SSID="MeinWLAN"
+CONFIG_PIANO_WIFI_PASSWORD="geheim"
+CONFIG_PIANO_MQTT_URI="mqtt://192.168.1.50:1883"
+CONFIG_PIANO_MQTT_USERNAME=""
+CONFIG_PIANO_MQTT_PASSWORD=""
+```
+
+Without credentials the firmware still boots: USB MIDI and chord detection work
+and recognised chords go to the log instead of MQTT. That is the quickest way
+to bring up the hardware.
+
+### Which cable in which socket
+
+The board has two USB-C sockets and they are *not* interchangeable. Use the one
+marked **UART** for flashing, power and the log; the one marked **USB** belongs
+to the piano. `make port` tells you what is connected:
+
+```
+$ make port
+/dev/cu.usbmodem5C941343941
+  |       "USB Product Name" = "USB Single Serial"
+```
+
+* `USB Single Serial` / `1a86:55d3` — the CH343 bridge, i.e. the **UART**
+  socket. This is the one you want.
+* `Espressif Systems` / `303a:xxxx` — the **native** socket. The firmware takes
+  that controller over for USB host mode, so the port disappears as soon as the
+  app starts and you get no log at all.
+
+## Commands
+
+All of these are wrappers around longer commands; run `make help` for the list.
+
+| Command | What it does |
+|---|---|
+| `make build` | Compiles in the ESP-IDF container. |
+| `make flash` | Writes the firmware to the board. |
+| `make monitor` | **Reads the log.** Resets the board first so the boot output is not missed. Ctrl-C quits. |
+| `make run` | `build` + `flash` + `monitor`, the usual edit/test loop. |
+| `make test` | Runs the chord detector tests on your Mac, no hardware needed. |
+| `make menuconfig` | ESP-IDF configuration menu (interactive). |
+| `make size` | Where flash and RAM are going. |
+| `make erase` | Erases the entire flash. Use when the board behaves strangely. |
+| `make clean` / `make fullclean` | Deletes build output. |
+| `make port` | Shows the detected serial port and what is on it. |
+
+The port is detected automatically; override it if you have several boards
+plugged in:
+
+```bash
+make flash PORT=/dev/cu.usbmodem5C941343941
+```
+
+### Reading the log
+
+```bash
+make monitor
+```
+
+This is the one you will use most. It resets the board and streams the serial
+output, so you see the whole boot sequence:
+
+```
+I (353) triggers: 5 trigger(s) loaded, stable_ms=60 min_notes=3 retrigger_ms=1500
+I (409) usb_midi: USB host installed, waiting for a MIDI device
+I (2345) usb_midi: device 0499:1050 attached
+I (2360) piano: piano connected (0499:1050)
+I (5012) piano: chord Cmaj7      (4 notes, vel 78)
+```
+
+Every recognised chord is logged, whether or not MQTT is reachable, so this
+also works as a tuning aid: play a chord, see what the firmware calls it, put
+that name into `triggers.json`.
+
+To attach without resetting (so you do not lose the current state), pass
+`--no-reset`:
+
+```bash
+~/.esptool-venv/bin/python tools/monitor.py --no-reset
+```
+
+### Watching MQTT
+
+Once the broker is configured, this shows everything the bridge publishes:
+
+```bash
+mosquitto_sub -h 192.168.1.50 -v -t 'piano/#'
+```
+
+If `mosquitto_sub` is not installed: `brew install mosquitto`.
+
+### The underlying commands
+
+If you would rather not use `make`:
+
+```bash
+# build
+docker run --rm -v "$PWD":/project -w /project espressif/idf:v5.5 idf.py build
+
+# flash
+cd build && ~/.esptool-venv/bin/esptool --chip esp32s3 \
+    --port /dev/cu.usbmodem5C941343941 -b 460800 \
+    --before default-reset --after hard-reset write-flash "@flash_args"
+
+# log
+~/.esptool-venv/bin/python tools/monitor.py
+```
+
+### With a local ESP-IDF instead
+
+If you do install ESP-IDF v5.3 or newer natively, the normal workflow applies
+and you do not need the container, the venv or the Makefile:
+
+```bash
 . $IDF_PATH/export.sh
 idf.py build flash monitor
-```
-
-`credentials.defaults` is gitignored and appended to `SDKCONFIG_DEFAULTS`
-automatically, so secrets never reach the repository and no `menuconfig`
-round-trip is needed. Every other setting is still under
-`idf.py menuconfig` -> *Piano MQTT Bridge*.
-
-Without credentials the firmware still boots and runs: USB MIDI and chord
-detection work, and recognised chords are written to the log instead of being
-published. That is the quickest way to bring up the hardware.
-
-### Building without a local ESP-IDF
-
-```bash
-docker run --rm -v "$PWD":/project -w /project espressif/idf:v5.5 idf.py build
-```
-
-Flashing has to happen on the host, since Docker Desktop on macOS cannot pass
-through USB serial ports:
-
-```bash
-cd build && esptool --chip esp32s3 --port /dev/cu.usbmodem<...> -b 460800 \
-    --before default-reset --after hard-reset write-flash "@flash_args"
 ```
 
 ## Configuring chords
@@ -126,10 +240,11 @@ a device trigger in the automation editor. See
 
 ## Tests
 
-The chord detector has no ESP-IDF dependencies and is tested on the host:
+The chord detector has no ESP-IDF dependencies and is tested on the host, so
+this needs neither the container nor the board:
 
 ```bash
-make -C test check
+make test
 ```
 
 ## Troubleshooting
@@ -139,6 +254,7 @@ make -C test check
 | `waiting for a MIDI device` forever, nothing on connect | No VBUS on the USB-A breakout. Check the 5 V jumper, and that the board itself is powered through the `UART` socket. |
 | Device attaches, then `no USB MIDI interface found` | Something other than the piano is plugged in, or D+/D− are swapped. |
 | Enumerates, then disconnects or stalls | D+/D− wires too long or not routed as a pair. Shorten them. |
-| Chords are recognised but Home Assistant shows nothing | MQTT credentials; check `idf.py monitor` for the `mqtt` tag. |
+| Chords are recognised but Home Assistant shows nothing | Broker address or credentials; run `make monitor` and look for the `mqtt` tag. |
+| `make monitor` shows nothing at all | Cable is in the socket marked `USB` instead of `UART`. Check with `make port`. |
 | Rolled chords fire the wrong trigger | Raise `stable_ms` in `triggers.json`. |
 | A trigger fires repeatedly | Raise `retrigger_ms`. |
