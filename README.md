@@ -50,13 +50,34 @@ will not talk without it. Full explanation and the diagram:
 Needs ESP-IDF **v5.3 or newer**.
 
 ```bash
+cp credentials.defaults.example credentials.defaults   # then fill it in
+
 . $IDF_PATH/export.sh
-idf.py set-target esp32s3
-idf.py menuconfig          # -> Piano MQTT Bridge: WiFi and MQTT credentials
 idf.py build flash monitor
 ```
 
-`sdkconfig` is gitignored, so your credentials stay out of the repository.
+`credentials.defaults` is gitignored and appended to `SDKCONFIG_DEFAULTS`
+automatically, so secrets never reach the repository and no `menuconfig`
+round-trip is needed. Every other setting is still under
+`idf.py menuconfig` -> *Piano MQTT Bridge*.
+
+Without credentials the firmware still boots and runs: USB MIDI and chord
+detection work, and recognised chords are written to the log instead of being
+published. That is the quickest way to bring up the hardware.
+
+### Building without a local ESP-IDF
+
+```bash
+docker run --rm -v "$PWD":/project -w /project espressif/idf:v5.5 idf.py build
+```
+
+Flashing has to happen on the host, since Docker Desktop on macOS cannot pass
+through USB serial ports:
+
+```bash
+cd build && esptool --chip esp32s3 --port /dev/cu.usbmodem<...> -b 460800 \
+    --before default-reset --after hard-reset write-flash "@flash_args"
+```
 
 ## Configuring chords
 

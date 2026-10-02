@@ -62,7 +62,7 @@ static void wifi_event_handler(void *arg, esp_event_base_t base, int32_t id, voi
 esp_err_t app_wifi_start(void)
 {
     if (strlen(CONFIG_PIANO_WIFI_SSID) == 0) {
-        ESP_LOGE(TAG, "no SSID configured, run 'idf.py menuconfig' -> Piano MQTT Bridge");
+        ESP_LOGE(TAG, "no SSID configured, see credentials.defaults");
         return ESP_ERR_INVALID_STATE;
     }
 
