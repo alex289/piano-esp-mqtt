@@ -30,7 +30,7 @@ avoids both problems.
 |---|---|
 | USB type A **socket** breakout board, 2.54 mm pin header | ~2–3 €, search for "USB A female breakout". Make sure the header is pre-soldered. |
 | USB-A to USB-B cable | A normal printer cable. |
-| 4 female–female jumper wires | Keep them short, 10–15 cm. |
+| 4 female–female jumper wires | Both ends need sockets: the DevKitC-1 header and the breakout both present pins. Twist the data pair; see below. |
 | Optional: 500 mA polyfuse | In the 5 V line, cheap insurance. |
 
 ## Wiring
@@ -71,10 +71,14 @@ serial console for `idf.py monitor`).
 
 * **Never plug anything into the socket marked `USB` while the breakout is
   connected.** Both use GPIO19/20; they cannot be active at the same time.
-* Keep the D+/D− wires **short and next to each other** — ideally twist the
-  pair. These are 12 Mbit/s full-speed signals and jumper wires are a poor
-  transmission line. Under ~15 cm this works reliably in practice; if
-  enumeration is flaky, shorten the wires before suspecting the firmware.
+* **Twist the D+/D− pair together** along its whole length. This matters more
+  than the length does. Jumper wires are a poor transmission line, but the
+  ESP32-S3 only speaks USB full-speed (12 Mbit/s), which tolerates far more
+  than high-speed would — 20 cm of twisted jumper wire is normally fine, and
+  MIDI uses a tiny fraction of that bandwidth anyway.
+* If enumeration is flaky — the log repeating `device ... attached`, stalls, or
+  reconnects — suspect the wiring before the firmware. Shorter wires and a
+  tighter twist are the first thing to try.
 * The piano draws essentially nothing from VBUS, so powering the breakout from
   the board's 5 V pin is fine. That pin is fed straight from the `UART` socket,
   so use a decent 5 V supply, not a weak phone charger.

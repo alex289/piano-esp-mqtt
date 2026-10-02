@@ -260,7 +260,7 @@ make test
 |---|---|
 | `waiting for a MIDI device` forever, nothing on connect | No VBUS on the USB-A breakout. Check the 5 V jumper, and that the board itself is powered through the `UART` socket. |
 | Device attaches, then `no USB MIDI interface found` | Something other than the piano is plugged in, or D+/D− are swapped. |
-| Enumerates, then disconnects or stalls | D+/D− wires too long or not routed as a pair. Shorten them. |
+| Enumerates, then disconnects or stalls | D+/D− not twisted together, or the wires are long. Twist the pair first, shorten second. |
 | Chords are recognised but Home Assistant shows nothing | Broker address or credentials; run `make monitor` and look for the `mqtt` tag. |
 | Edited `credentials.defaults` but the log still says no SSID | A stale `sdkconfig` is overriding it. `make reconfigure && make build`. |
 | `make monitor` shows nothing at all | Cable is in the socket marked `USB` instead of `UART`. Check with `make port`. |
