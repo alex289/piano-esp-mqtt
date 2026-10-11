@@ -11,12 +11,12 @@ After the first connection a device **"Yamaha P-115"** appears under
 
 | Entity | Type | Meaning |
 |---|---|---|
-| `sensor.yamaha_p_115_akkord` | sensor | The chord most recently recognised, e.g. `Cmaj7` or `Am7/C`. Attributes hold the root, quality, bass, MIDI note numbers and velocity. |
-| `binary_sensor.yamaha_p_115_spielt` | binary sensor | `on` while at least one key is held. |
-| `binary_sensor.yamaha_p_115_usb_verbindung` | binary sensor | `on` while the piano is enumerated on the USB port. |
+| `sensor.yamaha_p_115_chord` | sensor | The chord most recently recognised, e.g. `Cmaj7` or `Am7/C`. Attributes hold the root, quality, bass, MIDI note numbers and velocity. |
+| `binary_sensor.yamaha_p_115_playing` | binary sensor | `on` while at least one key is held. |
+| `binary_sensor.yamaha_p_115_usb_connection` | binary sensor | `on` while the piano is enumerated on the USB port. |
 
 The chord sensor is retained and deliberately *keeps* its last value when you
-lift your hands — use the "Spielt" sensor to tell playing from silence.
+lift your hands — use the "Playing" sensor to tell playing from silence.
 
 ## Triggers
 
@@ -28,17 +28,17 @@ The YAML equivalent:
 
 ```yaml
 automation:
-  - alias: "Licht per Akkord"
-    trigger:
-      - platform: device
+  - alias: "Lights by chord"
+    triggers:
+      - trigger: device
         domain: mqtt
         device_id: <taken from the UI>
         type: chord_played
-        subtype: "Licht an"
-    action:
-      - service: light.turn_on
+        subtype: "Lights on"
+    actions:
+      - action: light.turn_on
         target:
-          entity_id: light.wohnzimmer
+          entity_id: light.living_room
 ```
 
 If you would rather not use device triggers, subscribe to the raw topic
@@ -46,16 +46,16 @@ instead — it carries the trigger id, the chord and the velocity:
 
 ```yaml
 automation:
-  - alias: "Licht per Akkord (MQTT)"
-    trigger:
-      - platform: mqtt
+  - alias: "Lights by chord (MQTT)"
+    triggers:
+      - trigger: mqtt
         topic: "piano/trigger"
         value_template: "{{ value_json.id }}"
-        payload: "licht_an"
-    action:
-      - service: light.turn_on
+        payload: "lights_on"
+    actions:
+      - action: light.turn_on
         target:
-          entity_id: light.wohnzimmer
+          entity_id: light.living_room
 ```
 
 Velocity is published with every trigger, so you can make an automation react
@@ -72,13 +72,13 @@ to how hard the chord was played:
 |---|---|---|
 | `piano/status` | yes | `online` / `offline` (last will) |
 | `piano/chord` | yes | `{"name":"Cmaj7","base_name":"Cmaj7","identified":true,"root":"C","quality":"maj7","bass":"C","velocity":78,"notes":[60,64,67,71]}` |
-| `piano/trigger` | no | `{"id":"licht_an","name":"Licht an","chord":"Cmaj7","velocity":78}` |
+| `piano/trigger` | no | `{"id":"lights_on","name":"Lights on","chord":"Cmaj7","velocity":78}` |
 | `piano/playing` | yes | `ON` / `OFF` |
 | `piano/usb` | yes | `ON` / `OFF` |
 | `piano/midi` | no | raw MIDI, only when `PIANO_PUBLISH_RAW_MIDI` is enabled |
 
 The base topic, the discovery prefix and the device id are all configurable via
-`idf.py menuconfig` → *Piano MQTT Bridge*.
+`make menuconfig` → *Piano MQTT Bridge*.
 
 ## Watching what the piano sends
 

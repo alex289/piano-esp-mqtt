@@ -1,7 +1,7 @@
 {
   "_comment": [
     "Chord detection tuning and the chords that fire Home Assistant triggers.",
-    "Edit this file and re-flash: idf.py build flash",
+    "Edit this file and re-flash: make build flash",
     "",
     "stable_ms         how long the set of held keys must stay unchanged before",
     "                  it counts as a chord. Raise it if rolled chords produce",

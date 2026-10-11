@@ -9,8 +9,9 @@ ESPTOOL   ?= $(HOME)/.esptool-venv/bin/esptool
 PYTHON    ?= $(HOME)/.esptool-venv/bin/python
 BAUD      ?= 460800
 
-# The CH343 bridge on this board enumerates as usbmodem, not usbserial.
-PORT ?= $(shell ls /dev/cu.usbmodem* /dev/cu.usbserial* /dev/cu.wchusbserial* 2>/dev/null | head -1)
+# The CH343 bridge enumerates as usbmodem on macOS and ttyACM on Linux.
+PORT ?= $(shell ls /dev/cu.usbmodem* /dev/cu.usbserial* /dev/cu.wchusbserial* \
+	/dev/ttyACM* /dev/ttyUSB* 2>/dev/null | head -1)
 
 DOCKER_RUN = docker run --rm -v "$(CURDIR)":/project -w /project $(IDF_IMAGE)
 

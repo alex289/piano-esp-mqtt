@@ -44,7 +44,8 @@ docs/HOME_ASSISTANT.md      entities, triggers, topics
 **Short version:** a USB-A socket breakout wired to `5V`, `19`, `20`, `G`, then
 a normal USB-A/USB-B cable to the piano. The native USB-C socket cannot be used
 directly because the DevKitC-1 does not put 5 V on its VBUS pin, and the piano
-will not talk without it. Full explanation and the diagram:
+will not talk without it. On the common clone boards the `5V` pin (labelled
+`5Vin` there) is dead until the `IN-OUT` solder jumper is bridged. Full explanation and the diagram:
 **[docs/HARDWARE.md](docs/HARDWARE.md)**.
 
 ## Setup
@@ -81,8 +82,8 @@ Leave username and password empty for a broker that allows anonymous access
 (Mosquitto started with `mosquitto-no-auth.conf`):
 
 ```
-CONFIG_PIANO_WIFI_SSID="MeinWLAN"
-CONFIG_PIANO_WIFI_PASSWORD="geheim"
+CONFIG_PIANO_WIFI_SSID="MyWiFi"
+CONFIG_PIANO_WIFI_PASSWORD="secret"
 CONFIG_PIANO_MQTT_URI="mqtt://192.168.1.50:1883"
 CONFIG_PIANO_MQTT_USERNAME=""
 CONFIG_PIANO_MQTT_PASSWORD=""
@@ -120,7 +121,7 @@ All of these are wrappers around longer commands; run `make help` for the list.
 | `make flash` | Writes the firmware to the board. |
 | `make monitor` | **Reads the log.** Resets the board first so the boot output is not missed. Ctrl-C quits. |
 | `make run` | `build` + `flash` + `monitor`, the usual edit/test loop. |
-| `make test` | Runs the chord detector tests on your Mac, no hardware needed. |
+| `make test` | Runs the chord detector tests on your computer, no hardware needed. |
 | `make menuconfig` | ESP-IDF configuration menu (interactive). |
 | `make size` | Where flash and RAM are going. |
 | `make erase` | Erases the entire flash. Use when the board behaves strangely. |
@@ -145,7 +146,7 @@ This is the one you will use most. It resets the board and streams the serial
 output, so you see the whole boot sequence:
 
 ```
-I (353) triggers: 5 trigger(s) loaded, stable_ms=60 min_notes=3 retrigger_ms=1500
+I (353) triggers: 2 trigger(s) loaded, stable_ms=60 min_notes=3 retrigger_ms=1500
 I (409) usb_midi: USB host installed, waiting for a MIDI device
 I (2120) usb_midi: device 0499:160f attached
 I (2123) piano: piano connected (0499:160f)
@@ -174,7 +175,8 @@ Once the broker is configured, this shows everything the bridge publishes:
 mosquitto_sub -h 192.168.1.50 -v -t 'piano/#'
 ```
 
-If `mosquitto_sub` is not installed: `brew install mosquitto`.
+If `mosquitto_sub` is not installed: `brew install mosquitto` on macOS,
+`apt install mosquitto-clients` on Debian/Ubuntu.
 
 ### The underlying commands
 
@@ -216,9 +218,9 @@ and parsed at boot.
   "retrigger_ms": 1500,
 
   "triggers": [
-    { "id": "licht_an",  "name": "Licht an",  "chord": "Cmaj7" },
-    { "id": "licht_aus", "name": "Licht aus", "chord": "Fm" },
-    { "id": "gruss",     "name": "Gruss",     "notes": [60, 64, 67, 72] }
+    { "id": "lights_on",  "name": "Lights on",  "chord": "Cmaj7" },
+    { "id": "lights_off", "name": "Lights off", "chord": "Fm" },
+    { "id": "hello",      "name": "Hello",      "notes": [60, 64, 67, 72] }
   ]
 }
 ```
@@ -239,7 +241,7 @@ Recognised qualities: major, `m`, `dim`, `aug`, `sus2`, `sus4`, `maj7`, `7`,
 Not sure what a chord is called? Subscribe to the topic and play it:
 
 ```bash
-mosquitto_sub -h homeassistant.local -v -t 'piano/#'
+mosquitto_sub -h 192.168.1.50 -v -t 'piano/#'
 ```
 
 ## Home Assistant
@@ -264,7 +266,7 @@ make test
 | `waiting for a MIDI device` and nothing after it | The piano is not detected. Enable *Check the USB data lines at boot* under *Piano MQTT Bridge* in `make menuconfig`, rebuild and flash, switch the piano on, reset the board and look for the `line probe` line. |
 | `line probe: D+ and D- both low` | The piano is not pulling D+ up: no VBUS on the breakout (on clone boards bridge the `IN-OUT` pads first, see `docs/HARDWARE.md`; then check the 5 V jumper and its solder joint), the USB cable is not plugged in at both ends, or the D+ wire is open. |
 | `line probe: D- high, D+ low` | D+ and D− are swapped. Exchange the jumpers on `19` and `20`. |
-| `line probe: D+ high, D- low`, but still no `device … attached` | Wiring is fine and the piano is there; the problem is on the firmware side. Send the log. |
+| `line probe: D+ high, D- low`, but still no `device … attached` | Wiring is fine and the piano is there; the problem is on the firmware side. Please open an issue with the log. |
 | Device attaches, then `no USB MIDI interface found` | Something other than the piano is plugged in, or D+/D− are swapped. |
 | Enumerates, then disconnects or stalls | D+/D− not twisted together, or the wires are long. Twist the pair first, shorten second. |
 | Chords are recognised but Home Assistant shows nothing | Broker address or credentials; run `make monitor` and look for the `mqtt` tag. |
@@ -272,3 +274,7 @@ make test
 | `make monitor` shows nothing at all | Cable is in the socket marked `USB` instead of `UART`. Check with `make port`. |
 | Rolled chords fire the wrong trigger | Raise `stable_ms` in `triggers.json`. |
 | A trigger fires repeatedly | Raise `retrigger_ms`. |
+
+## License
+
+MIT, see [LICENSE](LICENSE).

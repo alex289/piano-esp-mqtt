@@ -46,13 +46,14 @@ clones. GPIO19/20 are on header **J3**, `5V` and `G` on **J1**.
 > solder and `5Vin` then carries the USB 5 V. Leave the other two open.
 > The USB sockets keep their own diodes, so nothing can push current back into
 > the PC. The other direction is open now, though: do not connect an external
-> supply to `5Vin` while USB is plugged in, or USB will back-feed it. Without this bridge the line
-> probe reports `D+ and D- both low` no matter how good the wiring is.
+> supply to `5Vin` while USB is plugged in, or the two supplies end up fighting
+> each other. Without this bridge the piano never sees VBUS, and the line probe
+> reports `D+ and D- both low` no matter how good the wiring is.
 
 ```
 USB-A breakout            ESP32-S3-DevKitC-1
 -------------------------------------------
-VBUS (pin 1, often "5V")  -->  5V
+VBUS (pin 1, often "5V")  -->  5V      (5Vin on the clones)
 D-   (pin 2)              -->  19      (GPIO19, USB_D-)
 D+   (pin 3)              -->  20      (GPIO20, USB_D+)
 GND  (pin 4, "G")         -->  G       (GND)
@@ -60,7 +61,7 @@ GND  (pin 4, "G")         -->  G       (GND)
 
 Then: USB-A cable from the breakout to the piano's **USB TO HOST** socket, and
 power the ESP32 through the socket marked **UART** (that one also carries the
-serial console for `idf.py monitor`).
+serial console for `make monitor`).
 
 ```
   mains ---- Yamaha P-115
@@ -103,7 +104,7 @@ serial console for `idf.py monitor`).
 
 ## Checking that it works
 
-`idf.py monitor` should show, within a second of connecting the piano:
+`make monitor` should show, within a second of connecting the piano:
 
 ```
 I (1234) usb_midi: USB host installed, waiting for a MIDI device

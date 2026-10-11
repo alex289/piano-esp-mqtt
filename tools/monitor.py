@@ -22,9 +22,10 @@ BAUD = 115200
 
 
 def find_port():
-    """The CH343 bridge on this board enumerates as usbmodem, not usbserial."""
+    """The CH343 bridge enumerates as usbmodem on macOS and ttyACM on Linux."""
     ports = sorted(glob.glob("/dev/cu.usbmodem*") + glob.glob("/dev/cu.usbserial*")
-                   + glob.glob("/dev/cu.wchusbserial*"))
+                   + glob.glob("/dev/cu.wchusbserial*")
+                   + glob.glob("/dev/ttyACM*") + glob.glob("/dev/ttyUSB*"))
     if not ports:
         sys.exit("No serial port found. Is the cable in the UART socket?")
     if len(ports) > 1:

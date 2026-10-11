@@ -81,7 +81,7 @@ static void publish_discovery(void)
     /* Sensor: the chord most recently played. */
     {
         cJSON *doc = cJSON_CreateObject();
-        cJSON_AddStringToObject(doc, "name", "Akkord");
+        cJSON_AddStringToObject(doc, "name", "Chord");
         cJSON_AddStringToObject(doc, "unique_id", DEVID "_chord");
         cJSON_AddStringToObject(doc, "state_topic", TOPIC_CHORD);
         cJSON_AddStringToObject(doc, "value_template", "{{ value_json.name }}");
@@ -96,7 +96,7 @@ static void publish_discovery(void)
     /* Binary sensor: keys are down right now. */
     {
         cJSON *doc = cJSON_CreateObject();
-        cJSON_AddStringToObject(doc, "name", "Spielt");
+        cJSON_AddStringToObject(doc, "name", "Playing");
         cJSON_AddStringToObject(doc, "unique_id", DEVID "_playing");
         cJSON_AddStringToObject(doc, "state_topic", TOPIC_PLAYING);
         cJSON_AddStringToObject(doc, "payload_on", "ON");
@@ -111,7 +111,7 @@ static void publish_discovery(void)
     /* Binary sensor: the piano is plugged into the USB port and enumerated. */
     {
         cJSON *doc = cJSON_CreateObject();
-        cJSON_AddStringToObject(doc, "name", "USB-Verbindung");
+        cJSON_AddStringToObject(doc, "name", "USB connection");
         cJSON_AddStringToObject(doc, "unique_id", DEVID "_usb");
         cJSON_AddStringToObject(doc, "state_topic", TOPIC_USB);
         cJSON_AddStringToObject(doc, "payload_on", "ON");
@@ -250,7 +250,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base,
     case MQTT_EVENT_ERROR:
         if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
             ESP_LOGE(TAG, "transport error: %s",
-                     esp_err_to_name(event->error_handle->esp_transport_sock_errno));
+                     strerror(event->error_handle->esp_transport_sock_errno));
         } else {
             ESP_LOGE(TAG, "error type %d, connect return code %d",
                      event->error_handle->error_type,
