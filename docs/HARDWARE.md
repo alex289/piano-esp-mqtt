@@ -38,6 +38,17 @@ avoids both problems.
 Use the pins by their silkscreen labels; the numbering is the same on the
 clones. GPIO19/20 are on header **J3**, `5V` and `G` on **J1**.
 
+> **Clones: bridge `IN-OUT` first.** On the diymore/YD-style clones the pin is
+> labelled `5Vin`, and out of the box it carries **no** voltage when the board
+> runs from USB: a diode lets 5 V into that pin but not out of it. Next to the
+> USB-C sockets there are three solder-jumper pad pairs, `RGB`, `IN-OUT` and
+> `USB-OTG`, all open from the factory. Bridge **`IN-OUT`** with a blob of
+> solder and `5Vin` then carries the USB 5 V. Leave the other two open.
+> The USB sockets keep their own diodes, so nothing can push current back into
+> the PC. The other direction is open now, though: do not connect an external
+> supply to `5Vin` while USB is plugged in, or USB will back-feed it. Without this bridge the line
+> probe reports `D+ and D- both low` no matter how good the wiring is.
+
 ```
 USB-A breakout            ESP32-S3-DevKitC-1
 -------------------------------------------
@@ -84,8 +95,11 @@ serial console for `idf.py monitor`).
   reconnects — suspect the wiring before the firmware. Shorter wires and a
   tighter twist are the first thing to try.
 * The piano draws essentially nothing from VBUS, so powering the breakout from
-  the board's 5 V pin is fine. That pin is fed straight from the `UART` socket,
-  so use a decent 5 V supply, not a weak phone charger.
+  the board's 5 V pin is fine. On the original DevKitC-1 that pin is fed from
+  the USB sockets; on the clones only once `IN-OUT` is bridged (see above).
+  Use a decent 5 V supply, not a weak phone charger.
+* No multimeter? Plug a phone's charging cable into the breakout. If it does
+  not start charging, there is no VBUS.
 
 ## Checking that it works
 
@@ -93,12 +107,23 @@ serial console for `idf.py monitor`).
 
 ```
 I (1234) usb_midi: USB host installed, waiting for a MIDI device
-I (2345) usb_midi: device 0499:XXXX attached
+I (2345) usb_midi: device 0499:160f attached
 I (2350) usb_midi: MIDIStreaming interface 1 alt 0
-I (2355) usb_midi: streaming MIDI from EP 0x81 (mps 64)
-I (2360) piano: piano connected (0499:XXXX)
+I (2355) usb_midi: streaming MIDI from EP 0x82 (mps 64)
+I (2360) piano: piano connected (0499:160f)
 ```
 
-`0x0499` is Yamaha's USB vendor id. If nothing appears at all, the problem is
-almost always VBUS or the D+/D− pair — see the troubleshooting table in the
-README.
+`0x0499` is Yamaha's USB vendor id, `160f` is what the P-115 reports. If the
+piano is connected but chords produce nothing, enable *Log every key press and
+release* under *Piano MQTT Bridge* in `make menuconfig`: every key then shows
+up as a `note on` / `note off` line. No such lines means the problem is on the
+USB side, not in chord detection or MQTT.
+
+If nothing attaches, turn on the line probe: *Check the USB data lines at
+boot* under *Piano MQTT Bridge* in `make menuconfig`. It is off by default
+because it is read once at boot, before the USB host takes over the pins, so
+it only means something when the piano is already on: connect everything,
+switch the piano on, then reset the board. It looks at the bare D+/D− levels:
+a powered piano pulls D+ high. If it reports both lines low, the piano is not
+seeing VBUS or the cable is not plugged in — see the troubleshooting table in
+the README.

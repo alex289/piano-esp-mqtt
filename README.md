@@ -147,14 +147,17 @@ output, so you see the whole boot sequence:
 ```
 I (353) triggers: 5 trigger(s) loaded, stable_ms=60 min_notes=3 retrigger_ms=1500
 I (409) usb_midi: USB host installed, waiting for a MIDI device
-I (2345) usb_midi: device 0499:1050 attached
-I (2360) piano: piano connected (0499:1050)
-I (5012) piano: chord Cmaj7      (4 notes, vel 78)
+I (2120) usb_midi: device 0499:160f attached
+I (2123) piano: piano connected (0499:160f)
+I (10515) piano: chord C          (3 notes, vel 46)
+I (10520) mqtt: trigger licht_an (C)
 ```
 
 Every recognised chord is logged, whether or not MQTT is reachable, so this
 also works as a tuning aid: play a chord, see what the firmware calls it, put
-that name into `triggers.json`.
+that name into `triggers.json`. To see every single key as well (`note on E3
+(52) vel 46 ch 1`), enable *Log every key press and release* under *Piano MQTT
+Bridge* in `make menuconfig`.
 
 To attach without resetting (so you do not lose the current state), pass
 `--no-reset`:
@@ -258,7 +261,10 @@ make test
 
 | Symptom | Likely cause |
 |---|---|
-| `waiting for a MIDI device` forever, nothing on connect | No VBUS on the USB-A breakout. Check the 5 V jumper, and that the board itself is powered through the `UART` socket. |
+| `waiting for a MIDI device` and nothing after it | The piano is not detected. Enable *Check the USB data lines at boot* under *Piano MQTT Bridge* in `make menuconfig`, rebuild and flash, switch the piano on, reset the board and look for the `line probe` line. |
+| `line probe: D+ and D- both low` | The piano is not pulling D+ up: no VBUS on the breakout (on clone boards bridge the `IN-OUT` pads first, see `docs/HARDWARE.md`; then check the 5 V jumper and its solder joint), the USB cable is not plugged in at both ends, or the D+ wire is open. |
+| `line probe: D- high, D+ low` | D+ and D− are swapped. Exchange the jumpers on `19` and `20`. |
+| `line probe: D+ high, D- low`, but still no `device … attached` | Wiring is fine and the piano is there; the problem is on the firmware side. Send the log. |
 | Device attaches, then `no USB MIDI interface found` | Something other than the piano is plugged in, or D+/D− are swapped. |
 | Enumerates, then disconnects or stalls | D+/D− not twisted together, or the wires are long. Twist the pair first, shorten second. |
 | Chords are recognised but Home Assistant shows nothing | Broker address or credentials; run `make monitor` and look for the `mqtt` tag. |

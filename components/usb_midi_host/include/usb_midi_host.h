@@ -53,6 +53,7 @@ typedef struct {
     void              *arg;
     int                task_priority; /* 0 => 5  */
     int                task_stack;    /* 0 => 4096 */
+    bool               probe_lines;   /* log the bare D+/D- levels once at boot */
 } usb_midi_host_config_t;
 
 /* Installs the USB Host Library and starts the daemon and client tasks. */

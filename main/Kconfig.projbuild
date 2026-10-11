@@ -42,6 +42,23 @@ menu "Piano MQTT Bridge"
         string "Device name shown in Home Assistant"
         default "Yamaha P-115"
 
+    config PIANO_LOG_NOTES
+        bool "Log every key press and release to the serial console"
+        default n
+        help
+            Shows whether MIDI arrives at all, independent of chord
+            detection and MQTT. Useful when keys seem to do nothing.
+
+    config PIANO_USB_LINE_PROBE
+        bool "Check the USB data lines at boot (wiring troubleshooting)"
+        default n
+        help
+            Reads D+/D- once before the USB host starts and logs whether a
+            powered device is pulling them up. Tells apart missing 5 V,
+            swapped wires and a working connection. Only meaningful when the
+            piano is switched on before the board boots, so it is off by
+            default.
+
     config PIANO_PUBLISH_RAW_MIDI
         bool "Also publish every raw MIDI note on/off"
         default n

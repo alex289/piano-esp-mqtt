@@ -61,6 +61,23 @@ static void on_usb_connection(bool connected, const usb_midi_dev_info_t *info, v
 
 static void handle_midi(const usb_midi_msg_t *msg, uint32_t t)
 {
+#if CONFIG_PIANO_LOG_NOTES
+    if (msg->status == MIDI_NOTE_ON || msg->status == MIDI_NOTE_OFF) {
+        const bool on = (msg->status == MIDI_NOTE_ON && msg->data2 > 0);
+        ESP_LOGI(TAG, "note %-3s %s%d (%u) vel %u ch %u", on ? "on" : "off",
+                 chord_pitch_class_name(msg->data1), msg->data1 / 12 - 1,
+                 msg->data1, msg->data2, msg->channel + 1);
+    } else if (msg->status == MIDI_CONTROL_CHANGE && msg->data1 == MIDI_CC_SUSTAIN) {
+        /* The pedal sends a ramp of values; only the crossing matters. */
+        const bool down = (msg->data2 >= 64);
+        if (down != s_detect.pedal_down) {
+            ESP_LOGI(TAG, "sustain %s", down ? "down" : "up");
+        }
+    } else if (msg->status == MIDI_CONTROL_CHANGE) {
+        ESP_LOGI(TAG, "cc %u = %u", msg->data1, msg->data2);
+    }
+#endif
+
     switch (msg->status) {
     case MIDI_NOTE_ON:
         chord_detect_note_on(&s_detect, msg->data1, msg->data2, t);
@@ -157,6 +174,9 @@ void app_main(void)
         .on_connection = on_usb_connection,
         .task_priority = 5,
         .task_stack    = 4096,
+#if CONFIG_PIANO_USB_LINE_PROBE
+        .probe_lines   = true,
+#endif
     };
     ESP_ERROR_CHECK(usb_midi_host_start(&midi_cfg));
 

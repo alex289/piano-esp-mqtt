@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
+#include "driver/gpio.h"
 #include "usb/usb_host.h"
 
 static const char *TAG = "usb_midi";
@@ -298,9 +299,51 @@ static void client_task(void *arg)
     }
 }
 
+/*
+ * Reads D+/D- as plain GPIOs before the USB PHY takes the pins over. A
+ * full-speed device that sees VBUS pulls D+ up through 1.5 kOhm, which easily
+ * beats the weak internal pull-downs, so the two levels tell apart "no device
+ * or no VBUS", "swapped pair" and "looks right" -- cases in which the USB Host
+ * Library itself just stays silent.
+ */
+static void probe_bus_lines(void)
+{
+    const gpio_config_t io = {
+        .pin_bit_mask = BIT64(GPIO_NUM_19) | BIT64(GPIO_NUM_20),
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_ENABLE,
+    };
+    if (gpio_config(&io) != ESP_OK) {
+        return;
+    }
+    vTaskDelay(pdMS_TO_TICKS(20));
+    const int dm = gpio_get_level(GPIO_NUM_19);
+    const int dp = gpio_get_level(GPIO_NUM_20);
+
+    /* Hand the pads back without leftover pulls; the PHY brings its own. */
+    gpio_set_pull_mode(GPIO_NUM_19, GPIO_FLOATING);
+    gpio_set_pull_mode(GPIO_NUM_20, GPIO_FLOATING);
+
+    if (dp && !dm) {
+        ESP_LOGI(TAG, "line probe: D+ high, D- low -> a powered full-speed device is attached");
+    } else if (!dp && dm) {
+        ESP_LOGW(TAG, "line probe: D- high, D+ low -> D+ and D- are swapped (GPIO19/20)");
+    } else if (dp && dm) {
+        ESP_LOGW(TAG, "line probe: D+ and D- both high -> lines shorted together?");
+    } else {
+        ESP_LOGW(TAG, "line probe: D+ and D- both low -> no device pull-up: "
+                 "no VBUS, cable not plugged in, or the D+ wire is open");
+    }
+}
+
 static void daemon_task(void *arg)
 {
     (void)arg;
+    if (s_host.cfg.probe_lines) {
+        probe_bus_lines();
+    }
+
     const usb_host_config_t host_config = {
         .skip_phy_setup = false,
         .intr_flags = ESP_INTR_FLAG_LEVEL1,

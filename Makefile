@@ -35,11 +35,11 @@ build: reconfigure
 	$(DOCKER_RUN) idf.py build
 
 # ESP-IDF applies SDKCONFIG_DEFAULTS only when sdkconfig does not exist yet, so
-# an edit to credentials.defaults would otherwise be silently ignored and you
-# would flash a firmware with no WiFi configured.
+# an edit to credentials.defaults or a new Kconfig option would otherwise be
+# silently ignored and you would flash a firmware with no WiFi configured.
 reconfigure:
 	@if [ -f sdkconfig ]; then \
-		for f in sdkconfig.defaults credentials.defaults; do \
+		for f in sdkconfig.defaults credentials.defaults main/Kconfig.projbuild; do \
 			if [ -f "$$f" ] && [ "$$f" -nt sdkconfig ]; then \
 				echo "$$f is newer than sdkconfig, regenerating it"; \
 				rm -f sdkconfig; \
